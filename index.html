@@ -1,0 +1,452 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cristian & Shania: Italia + Grecia 2026</title>
+<meta name="description" content="Our trip from Miami to Venice, Athens, Santorini, Rome, Florence, the Dolomites and Milan. November 20 to December 6, 2026.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wdth,wght@12..96,75..100,300..800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+:root{
+  --aegean:#1F4FE0;
+  --aegean-deep:#123094;
+  --night:#0A1A4A;
+  --lemon:#FFD84A;
+  --enrosadira:#FF8FA8;
+  --plaster:#FFFFFF;
+  --ink:#0A1A4A;
+  --muted:#5A6690;
+  --line:#D9E0F5;
+  --flap:#0F1E55;
+  --flap-text:#FFF6CF;
+  --page:#F3F6FF;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --plaster:#0E1A42; --ink:#EEF2FF; --muted:#A9B4DA; --line:#26346B; --page:#081333;
+  }
+}
+:root[data-theme="dark"]{ --plaster:#0E1A42; --ink:#EEF2FF; --muted:#A9B4DA; --line:#26346B; --page:#081333; }
+
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--page);color:var(--ink);font-family:"Bricolage Grotesque",system-ui,sans-serif;font-size:17px;line-height:1.5;-webkit-font-smoothing:antialiased}
+a{color:inherit}
+:focus-visible{outline:3px solid var(--lemon);outline-offset:3px;border-radius:6px}
+button{font:inherit;cursor:pointer}
+
+/* ---------- HERO ---------- */
+.hero{position:relative;min-height:100svh;background:var(--aegean);color:#fff;overflow:hidden;display:flex;flex-direction:column;justify-content:center;padding:48px 16px 64px}
+.hero::before{content:"";position:absolute;inset:auto -10% -38% -10%;height:70%;background:radial-gradient(ellipse at 50% 0%,var(--aegean-deep) 0%,transparent 70%);pointer-events:none}
+.sun{position:absolute;width:min(46vw,420px);aspect-ratio:1;border-radius:50%;background:var(--lemon);right:-8vw;top:-10vw;opacity:.95}
+.hero-inner{position:relative;max-width:1080px;margin:0 auto;width:100%}
+.names{font-variation-settings:"wdth" 80;font-weight:500;font-size:clamp(18px,2.4vw,24px);margin:0 0 8px;letter-spacing:.01em}
+.year{display:flex;gap:clamp(6px,1.2vw,14px);margin:0 0 18px}
+.digit{position:relative;width:clamp(64px,17vw,200px);aspect-ratio:.72;perspective:600px}
+.digit .half{position:absolute;left:0;right:0;height:50%;overflow:hidden;background:var(--flap);color:var(--flap-text);font-weight:800;font-size:clamp(70px,19vw,230px);font-variation-settings:"wdth" 75;display:flex;justify-content:center;line-height:1;border-radius:clamp(6px,1.2vw,14px)}
+.digit .top{top:0;align-items:flex-end;border-bottom-left-radius:0;border-bottom-right-radius:0}
+.digit .top span{transform:translateY(50%)}
+.digit .bottom{bottom:0;align-items:flex-start;border-top-left-radius:0;border-top-right-radius:0}
+.digit .bottom span{transform:translateY(-50%)}
+.digit::after{content:"";position:absolute;left:0;right:0;top:50%;height:2px;background:var(--aegean);z-index:3}
+.digit .flip{transform-origin:bottom;z-index:2;animation:none}
+.digit .flip.go{animation:flipdown .16s ease-in forwards}
+@keyframes flipdown{to{transform:rotateX(-90deg)}}
+.tag{font-size:clamp(28px,5.4vw,64px);font-weight:700;line-height:1.02;margin:0;max-width:16ch;font-variation-settings:"wdth" 90}
+.sub{margin:16px 0 0;font-size:clamp(17px,2vw,21px);max-width:46ch;color:#DDE6FF}
+
+.countdown{display:flex;gap:10px;margin-top:28px;flex-wrap:wrap}
+.cd{background:rgba(255,255,255,.12);border-radius:14px;padding:10px 14px;min-width:84px}
+.cd b{display:block;font-size:30px;line-height:1;font-variant-numeric:tabular-nums}
+.cd small{font-size:14px;color:#DDE6FF}
+
+/* departure board */
+.board{margin-top:34px;background:var(--night);border-radius:18px;padding:14px;box-shadow:0 24px 60px -24px rgba(0,0,0,.6)}
+.board-head{display:grid;grid-template-columns:7.2em 1fr 1fr 5.5em;gap:10px;color:var(--lemon);font-size:14px;padding:0 6px 8px;font-weight:600}
+.row{display:grid;grid-template-columns:7.2em 1fr 1fr 5.5em;gap:10px;padding:5px 6px;border-top:1px solid rgba(255,255,255,.07);align-items:center}
+.cells{display:flex;gap:2px;flex-wrap:nowrap;overflow:hidden}
+.cell{display:inline-grid;place-items:center;width:1.05em;height:1.45em;background:#16296B;color:var(--flap-text);border-radius:3px;font-weight:700;font-size:clamp(11px,1.5vw,16px);font-variation-settings:"wdth" 100;font-variant-numeric:tabular-nums;position:relative}
+.cell::after{content:"";position:absolute;left:0;right:0;top:50%;height:1px;background:rgba(0,0,0,.18)}
+.mode{font-size:clamp(14px,1.8vw,19px);text-align:right}
+.row.todo .cell{background:#3A1F45;color:var(--enrosadira)}
+@media (max-width:640px){
+  .board-head{grid-template-columns:5.4em 1fr 1fr 2em}
+  .row{grid-template-columns:5.4em 1fr 1fr 2em;gap:6px}
+  .cell{width:.86em;font-size:10px}
+  .cells{gap:1px}
+  .board-head span:last-child{visibility:hidden}
+}
+.cta{display:inline-flex;align-items:center;gap:10px;margin-top:28px;background:var(--lemon);color:var(--night);border:0;border-radius:999px;padding:14px 22px;font-weight:700;font-size:18px;text-decoration:none}
+.cta:hover{background:#FFE277}
+
+/* ---------- MAP ---------- */
+section{padding:72px 16px}
+.wrap{max-width:1180px;margin:0 auto}
+h2{font-size:clamp(30px,4.4vw,48px);line-height:1.05;margin:0 0 10px;font-variation-settings:"wdth" 88}
+.lead{color:var(--muted);margin:0 0 26px;max-width:60ch}
+.mapgrid{display:grid;grid-template-columns:1fr 340px;gap:18px}
+@media (max-width:900px){.mapgrid{grid-template-columns:1fr}}
+#map{height:min(70vh,620px);min-height:420px;border-radius:22px;overflow:hidden;background:#cfe0ff;border:1px solid var(--line)}
+.panel{background:var(--plaster);border:1px solid var(--line);border-radius:22px;padding:20px;display:flex;flex-direction:column}
+.panel .when{color:var(--aegean);font-weight:700;font-size:15px}
+:root[data-theme="dark"] .panel .when{color:var(--lemon)}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .panel .when{color:var(--lemon)}}
+.panel h3{margin:4px 0 8px;font-size:30px;line-height:1.05}
+.panel p{margin:0 0 10px;color:var(--muted)}
+.panel .emoji{font-size:54px;line-height:1;margin-bottom:6px}
+.controls{display:flex;gap:8px;margin-top:auto;padding-top:14px;flex-wrap:wrap}
+.btn{border:2px solid var(--aegean);background:transparent;color:var(--ink);border-radius:999px;padding:9px 16px;font-weight:600}
+.btn.primary{background:var(--aegean);color:#fff}
+.btn:disabled{opacity:.4;cursor:default}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:16px}
+.chip{border:1px solid var(--line);background:var(--plaster);color:var(--ink);border-radius:999px;padding:6px 12px;font-size:14px}
+.chip[aria-current="true"]{background:var(--lemon);border-color:var(--lemon);color:var(--night);font-weight:700}
+.vehicle{font-size:30px;line-height:1;filter:drop-shadow(0 3px 4px rgba(0,0,0,.35));transition:transform .1s linear}
+.pin{width:18px;height:18px;border-radius:50%;background:var(--aegean);border:3px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.35)}
+.pin.todo{background:var(--enrosadira)}
+.pin.home{background:var(--lemon)}
+.burst{position:absolute;pointer-events:none;font-size:26px;animation:burst 1.4s ease-out forwards}
+@keyframes burst{0%{opacity:1;transform:translate(0,0) scale(.6)}100%{opacity:0;transform:translate(var(--dx),var(--dy)) scale(1.2) rotate(var(--r))}}
+
+/* ---------- DAYS ---------- */
+.days{display:grid;gap:0;margin-top:10px}
+.day{display:grid;grid-template-columns:110px 1fr;gap:22px;padding:22px 0;border-top:1px solid var(--line)}
+.day:last-child{border-bottom:1px solid var(--line)}
+.day .d{font-weight:700;font-size:15px;color:var(--muted)}
+.day .d b{display:block;font-size:40px;line-height:1;color:var(--ink);font-variation-settings:"wdth" 78}
+.day h3{margin:0 0 6px;font-size:24px;line-height:1.15}
+.day ul{margin:0;padding-left:18px;color:var(--muted)}
+.day li{margin:2px 0}
+.badge{display:inline-block;font-size:13px;font-weight:700;border-radius:999px;padding:2px 10px;margin-left:6px;vertical-align:3px}
+.badge.ok{background:#DCE6FF;color:var(--aegean-deep)}
+.badge.todo{background:#FFE1E8;color:#9B1C3B}
+@media (max-width:560px){.day{grid-template-columns:72px 1fr;gap:14px}.day .d b{font-size:30px}}
+
+.todo-box{background:var(--night);color:#fff;border-radius:24px;padding:28px}
+.todo-box h2{color:#fff}
+.todo-box .lead{color:#C7D2F5}
+.checks{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+.checks label{display:flex;gap:12px;align-items:flex-start;background:rgba(255,255,255,.06);border-radius:14px;padding:14px 16px;cursor:pointer}
+.checks input{width:22px;height:22px;accent-color:var(--lemon);margin-top:2px;flex:none}
+.checks input:checked + span{text-decoration:line-through;opacity:.55}
+footer{padding:40px 16px 60px;text-align:center;color:var(--muted);font-size:15px}
+.leaflet-container{font-family:inherit}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
+</style>
+</head>
+<body>
+
+<header class="hero" id="top">
+  <div class="sun" aria-hidden="true"></div>
+  <div class="hero-inner">
+    <p class="names">Cristian &amp; Shania present</p>
+    <div class="year" id="year" role="img" aria-label="2026"></div>
+    <h1 class="tag">Seventeen days, two countries, one hot tub over a volcano.</h1>
+    <p class="sub">Miami to Venice, Athens, Santorini, Rome, Florence, the Dolomites and Milan. November 20 to December 6, 2026.</p>
+
+    <div class="countdown" id="countdown" aria-live="polite"></div>
+
+    <div class="board" aria-label="Departure board of every leg">
+      <div class="board-head"><span>Date</span><span>From</span><span>To</span><span>By</span></div>
+      <div id="rows"></div>
+    </div>
+
+    <a class="cta" href="#trip">Play the trip on the map</a>
+  </div>
+</header>
+
+<main>
+<section id="trip">
+  <div class="wrap">
+    <h2>Follow the route</h2>
+    <p class="lead">Press play and watch us hop from city to city, or tap a stop to jump straight there.</p>
+    <div class="mapgrid">
+      <div id="map" role="application" aria-label="Map of the trip route"></div>
+      <aside class="panel" aria-live="polite">
+        <div class="emoji" id="pEmoji">🌴</div>
+        <div class="when" id="pWhen">Fri Nov 20</div>
+        <h3 id="pTitle">Miami</h3>
+        <p id="pText">Wheels up at 4:45 PM on TAP Air Portugal.</p>
+        <div class="controls">
+          <button class="btn primary" id="play">Play the trip</button>
+          <button class="btn" id="prev" aria-label="Previous stop">Back</button>
+          <button class="btn" id="next" aria-label="Next stop">Next</button>
+        </div>
+      </aside>
+    </div>
+    <div class="chips" id="chips" role="list"></div>
+  </div>
+</section>
+
+<section id="days">
+  <div class="wrap">
+    <h2>Day by day</h2>
+    <p class="lead">Everything that's booked, plus the gaps we still have to fill.</p>
+    <div class="days" id="dayList"></div>
+  </div>
+</section>
+
+<section id="todo">
+  <div class="wrap">
+    <div class="todo-box">
+      <h2>Still to book</h2>
+      <p class="lead">Tick them off as we go. Your ticks are saved on this device only.</p>
+      <ul class="checks" id="checks"></ul>
+    </div>
+  </div>
+</section>
+</main>
+
+<footer>Made for Shania, with love and too many trains. Ciao, Miami! 🍋</footer>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* ---------- data ---------- */
+const P = {
+  MIA:[25.7959,-80.2870], LIS:[38.7742,-9.1342], VCE:[45.4408,12.3155], ATH:[37.9838,23.7275],
+  JTR:[36.4167,25.4318], ROM:[41.9028,12.4964], FLR:[43.7696,11.2558], BZO:[46.4983,11.3548],
+  DOL:[46.5747,11.6717], MIL:[45.4642,9.1900], CMN:[33.3675,-7.5898]
+};
+const stops = [
+  {k:'MIA', name:'Miami', when:'Fri Nov 20', emoji:'🌴', text:'Wheels up at 4:45 PM on TAP Air Portugal, overnight to Lisbon.', burst:'✈️🌴😎'},
+  {k:'VCE', name:'Venice', when:'Sat Nov 21 to Mon Nov 23', emoji:'🛶', text:'Land 11:15 AM via Lisbon. Two nights at B&B Hotel Venezia Laguna on Tronchetto.', burst:'🛶🍝🎭', via:['LIS'], mode:'✈️'},
+  {k:'ATH', name:'Athens', when:'Mon Nov 23', emoji:'🏛️', text:'Wizz Air at 12:45 PM, landing 4:00 PM. One night at Elevate Athens, in the centre.', burst:'🏛️🥙🫒', mode:'✈️'},
+  {k:'JTR', name:'Santorini', when:'Tue Nov 24 to Fri Nov 27', emoji:'🌋', text:'SKY express at 5:15 PM. Three nights in a caldera-view suite with its own hot tub. Volcano and hot springs cruise on Wed at 10:00.', burst:'🌋♨️💙', mode:'✈️'},
+  {k:'ROM', name:'Rome', when:'Fri Nov 27 to Mon Nov 30', emoji:'🍝', text:'Aegean via Athens, landing 5:35 PM. Three nights at Z-ArchSuites URBE in San Giovanni.', burst:'🍝🛵🏟️', via:['ATH'], mode:'✈️'},
+  {k:'FLR', name:'Florence', when:'Mon Nov 30 to Wed Dec 2', emoji:'🍷', text:'Italo at 8:55 AM, in Florence by 10:31. Where we sleep is still to be booked.', burst:'🍷🎨🥩', mode:'🚄', todo:true},
+  {k:'BZO', name:'Bolzano', when:'Wed Dec 2', emoji:'🚗', text:'Italo at 9:05 AM, in Bolzano at 12:23. Pick up the rental car (not booked yet).', burst:'🚗🥨🍎', mode:'🚄', todo:true},
+  {k:'DOL', name:'Dolomites', when:'Wed Dec 2 to Fri Dec 4', emoji:'🏔️', text:'Road trip into the mountains. Two nights somewhere magical, still to be booked.', burst:'🏔️❄️⛷️', mode:'🚗', todo:true},
+  {k:'MIL', name:'Milan', when:'Fri Dec 4 to Sun Dec 6', emoji:'🛍️', text:'Drop the car in Bolzano, Italo at 2:42 PM via Verona, Milano Centrale at 6:25 PM. Stay still to be booked.', burst:'🛍️☕🍕', via:['BZO'], mode:'🚄', todo:true},
+  {k:'MIA', name:'Home to Miami', when:'Sun Dec 6', emoji:'🏠', text:'Royal Air Maroc from Malpensa at noon, via Casablanca, home at 7:35 PM. Already planning the next one.', burst:'🏠💛🎉', via:['CMN'], mode:'✈️'}
+];
+const legs = [
+  ['Nov 20','MIAMI','LISBON','✈️'],
+  ['Nov 21','LISBON','VENICE','✈️'],
+  ['Nov 23','VENICE','ATHENS','✈️'],
+  ['Nov 24','ATHENS','SANTORINI','✈️'],
+  ['Nov 27','SANTORINI','ROME','✈️'],
+  ['Nov 30','ROME','FLORENCE','🚄'],
+  ['Dec 02','FLORENCE','BOLZANO','🚄'],
+  ['Dec 02','BOLZANO','DOLOMITES','🚗',true],
+  ['Dec 04','DOLOMITES','BOLZANO','🚗',true],
+  ['Dec 04','BOLZANO','MILAN','🚄'],
+  ['Dec 06','MILAN','MIAMI','✈️']
+];
+const days = [
+  ['20','Fri Nov','Miami to Lisbon',['TAP TP224 departs MIA 4:45 PM (time changed by TAP, accept it on Expedia)','Overnight flight, arrives Lisbon 5:55 AM'],'ok'],
+  ['21','Sat Nov','Lisbon to Venice',['TAP TP860 at 7:15 AM, lands VCE 11:15 AM','Check in at B&B Hotel Venezia Laguna from 3:00 PM, bring ID and card'],'ok'],
+  ['22','Sun Nov','Venice',['A whole day to get lost in the canals'],'ok'],
+  ['23','Mon Nov','Venice to Athens',['Check out by 11:00 AM','Wizz Air W4 6723 at 12:45 PM, lands 4:00 PM, carry-on only','Elevate Athens, Karolou 28, tell them your arrival time'],'ok'],
+  ['24','Tue Nov','Athens to Santorini',['Check out by 11:00 AM','SKY express GQ344 at 5:15 PM (new time), carry-on max 8 kg','Caldera’s Bliss Suites, host meets you there'],'ok'],
+  ['25','Wed Nov','Santorini',['Volcanic islands cruise with hot springs, 10:00 AM','Be at gate B5, Athinios port, by 9:45 AM. Dark swimsuit, towel, hat'],'ok'],
+  ['26','Thu Nov','Santorini',['Hot tub, caldera, sunset. Repeat.'],'ok'],
+  ['27','Fri Nov','Santorini to Rome',['Check out by 11:00 AM','Aegean A3355 + A3654 at 11:55, lands FCO 5:35 PM','Z-ArchSuites URBE, arrival agreed for 6 to 7 PM, message the host if late'],'ok'],
+  ['28','Sat Nov','Rome',['Colosseum, Trastevere, carbonara'],'ok'],
+  ['29','Sun Nov','Rome',['Vatican, gelato, more carbonara'],'ok'],
+  ['30','Mon Nov','Rome to Florence',['Check out by 10:00 AM','Italo 8906 at 8:55 AM, coach 6 seats 23 and 24, arrives 10:31','Florence stay for 2 nights'],'todo'],
+  ['1','Tue Dec','Florence',['Duomo, Ponte Vecchio, bistecca'],'todo'],
+  ['2','Wed Dec','Florence to Bolzano to the Dolomites',['Italo 8954 at 9:05 AM, coach 6 seats 31 and 32, arrives 12:23','Pick up the rental car in Bolzano','Dolomites stay for 2 nights'],'todo'],
+  ['3','Thu Dec','Dolomites',['Mountain roads, snow and views. Winter tyres or chains required'],'todo'],
+  ['4','Fri Dec','Dolomites to Bolzano to Milan',['Return the car in Bolzano before 2:42 PM','Italo 8963 then 8988 via Verona, Milano Centrale 6:25 PM','Milan stay for 2 nights'],'todo'],
+  ['5','Sat Dec','Milan',['Duomo rooftop, Galleria, aperitivo'],'todo'],
+  ['6','Sun Dec','Milan to Miami',['Malpensa Express by about 9:00 AM','Royal Air Maroc AT955 + AT204 at 12:00, one checked bag 23 kg each','Home in Miami 7:35 PM'],'ok']
+];
+const todos = [
+  ['car','Rental car in Bolzano, Dec 2 to Dec 4 (plus an International Driving Permit for each driver)'],
+  ['dol','Dolomites stay, Dec 2 to Dec 4'],
+  ['flr','Florence stay, Nov 30 to Dec 2'],
+  ['mil','Milan stay, Dec 4 to Dec 6'],
+  ['tap','Accept TAP’s new flight times on Expedia'],
+  ['tix','Museum tickets: Colosseum, Vatican, Uffizi, Accademia'],
+  ['ins','Travel insurance']
+];
+
+/* ---------- split-flap year ---------- */
+const yearEl = document.getElementById('year');
+const target = '2026';
+const digits = [...target].map(()=>{
+  const d = document.createElement('div'); d.className='digit';
+  d.innerHTML = '<div class="half top"><span>0</span></div><div class="half bottom"><span>0</span></div><div class="half top flip"><span>0</span></div>';
+  yearEl.appendChild(d); return d;
+});
+function setDigit(d,ch){ d.querySelectorAll('span').forEach(s=>s.textContent=ch); }
+function rollYear(){
+  digits.forEach((d,i)=>{
+    const end = +target[i]; let n = 0; const steps = 10*(i+1) + end;
+    if(reduce){ setDigit(d,target[i]); return; }
+    const tick = ()=>{
+      const cur = n % 10, nxt = (n+1) % 10;
+      const flip = d.querySelector('.flip');
+      d.querySelector('.top:not(.flip) span').textContent = nxt;
+      flip.querySelector('span').textContent = cur;
+      flip.classList.remove('go'); void flip.offsetWidth; flip.classList.add('go');
+      setTimeout(()=>{ d.querySelector('.bottom span').textContent = nxt; flip.querySelector('span').textContent = nxt; flip.classList.remove('go'); },160);
+      n++; if(n < steps) setTimeout(tick, 50 + n*1.5);
+    };
+    setTimeout(tick, 250 + i*120);
+  });
+}
+
+/* ---------- departure board ---------- */
+const CH = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 ';
+const rowsEl = document.getElementById('rows');
+const W = innerWidth < 640 ? 9 : 10;
+function cellsFor(str,len){ const w=document.createElement('div'); w.className='cells'; const s=str.padEnd(len,' ').slice(0,len); for(const c of s){ const e=document.createElement('span'); e.className='cell'; e.dataset.t=c; e.textContent=' '; w.appendChild(e);} return w; }
+legs.forEach(([date,from,to,mode,todo])=>{
+  const r=document.createElement('div'); r.className='row'+(todo?' todo':'');
+  r.append(cellsFor(date.toUpperCase(),6), cellsFor(from,W), cellsFor(to,W));
+  const m=document.createElement('div'); m.className='mode'; m.textContent=mode; m.setAttribute('aria-label',mode==='✈️'?'plane':mode==='🚗'?'car':'train');
+  r.append(m); r.setAttribute('aria-label',`${date}, ${from} to ${to}`); rowsEl.append(r);
+});
+function flapBoard(){
+  const cells=[...rowsEl.querySelectorAll('.cell')];
+  cells.forEach((c,i)=>{
+    const t=c.dataset.t; if(reduce){c.textContent=t;return;}
+    let k=0; const spins=6+Math.floor(Math.random()*10);
+    setTimeout(function spin(){
+      if(k>=spins){c.textContent=t;return;}
+      c.textContent=CH[Math.floor(Math.random()*CH.length)]; k++; setTimeout(spin,45);
+    }, 600 + Math.floor(i/ (W*2+6)) * 140 + Math.random()*200);
+  });
+}
+
+/* ---------- countdown ---------- */
+const takeoff = new Date('2026-11-20T16:45:00-05:00');
+const cdEl=document.getElementById('countdown');
+function renderCD(){
+  const ms=takeoff-new Date();
+  if(ms<=0){ cdEl.innerHTML='<div class="cd"><b>Ciao!</b><small>we’re on the trip</small></div>'; return; }
+  const d=Math.floor(ms/864e5), h=Math.floor(ms%864e5/36e5), m=Math.floor(ms%36e5/6e4), s=Math.floor(ms%6e4/1e3);
+  cdEl.innerHTML=[[d,'days'],[h,'hours'],[m,'minutes'],[s,'seconds']].map(([v,l])=>`<div class="cd"><b>${String(v).padStart(2,'0')}</b><small>${l} to takeoff</small></div>`).join('');
+}
+renderCD(); setInterval(renderCD,1000);
+
+/* ---------- map ---------- */
+const $=id=>document.getElementById(id);
+if(window.L){
+const map=L.map('map',{zoomControl:true,scrollWheelZoom:false,worldCopyJump:false}).setView([41,12],5);
+L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',{
+  attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/">CARTO</a>',subdomains:'abcd',maxZoom:18
+}).addTo(map);
+
+function curve(a,b,bend=0.18,n=80){
+  const [y1,x1]=a,[y2,x2]=b; const mx=(x1+x2)/2,my=(y1+y2)/2; const dx=x2-x1,dy=y2-y1;
+  const cx=mx-dy*bend, cy=my+dx*bend; const pts=[];
+  for(let i=0;i<=n;i++){const t=i/n; pts.push([(1-t)*(1-t)*y1+2*(1-t)*t*cy+t*t*y2,(1-t)*(1-t)*x1+2*(1-t)*t*cx+t*t*x2]);}
+  return pts;
+}
+// build route segments between stops
+const segs=[];
+for(let i=1;i<stops.length;i++){
+  const chain=[stops[i-1].k,...(stops[i].via||[]),stops[i].k];
+  let pts=[];
+  for(let j=1;j<chain.length;j++){
+    const mode=stops[i].mode; const bend = mode==='✈️'?0.2:0.04;
+    const c=curve(P[chain[j-1]],P[chain[j]],bend, mode==='✈️'?90:40); if(j>1)c.shift(); pts=pts.concat(c);
+  }
+  segs.push({pts,mode:stops[i].mode,todo:stops[i].todo});
+}
+// faint full route
+segs.forEach(s=>L.polyline(s.pts,{color:s.todo?'#FF8FA8':'#1F4FE0',weight:2,opacity:.35,dashArray:s.mode==='✈️'?'2 8':null}).addTo(map));
+const trail=L.layerGroup().addTo(map);
+// pins
+const pinFor=(cls)=>L.divIcon({className:'',html:`<div class="pin ${cls}"></div>`,iconSize:[18,18],iconAnchor:[9,9]});
+const seen=new Set();
+stops.forEach((s,i)=>{ if(seen.has(s.k))return; seen.add(s.k);
+  L.marker(P[s.k],{icon:pinFor(s.k==='MIA'?'home':s.todo?'todo':''),keyboard:false}).addTo(map).bindTooltip(s.name.replace('Home to ','')).on('click',()=>goTo(i));
+});
+const vIcon=(e)=>L.divIcon({className:'',html:`<div class="vehicle">${e}</div>`,iconSize:[34,34],iconAnchor:[17,17]});
+const vehicle=L.marker(P.MIA,{icon:vIcon('🧳'),interactive:false,zIndexOffset:1000}).addTo(map);
+
+let cur=0, playing=false, anim=null;
+function showPanel(i){
+  const s=stops[i];
+  $('pEmoji').textContent=s.emoji; $('pWhen').textContent=s.when; $('pTitle').textContent=s.name; $('pText').textContent=s.text;
+  document.querySelectorAll('.chip').forEach((c,j)=>c.setAttribute('aria-current',j===i?'true':'false'));
+  $('prev').disabled=i===0; $('next').disabled=i===stops.length-1;
+}
+function burstAt(latlng,chars){
+  if(reduce)return;
+  const pt=map.latLngToContainerPoint(latlng); const box=$('map');
+  [...chars].filter(c=>c.trim()).forEach((c,n)=>{ for(let r=0;r<3;r++){
+    const e=document.createElement('div'); e.className='burst'; e.textContent=c;
+    e.style.left=(pt.x-13)+'px'; e.style.top=(pt.y-13)+'px';
+    const a=Math.random()*Math.PI*2, d=60+Math.random()*70;
+    e.style.setProperty('--dx',Math.cos(a)*d+'px'); e.style.setProperty('--dy',Math.sin(a)*d-30+'px'); e.style.setProperty('--r',(Math.random()*80-40)+'deg');
+    e.style.zIndex=1000; box.appendChild(e); setTimeout(()=>e.remove(),1500);
+  }});
+}
+function fly(i,done){
+  const seg=segs[i-1]; const pts=seg.pts;
+  cancelAnimationFrame(anim);
+  map.flyToBounds(L.latLngBounds(pts).pad(.25),{duration:reduce?0:1.1,maxZoom:8});
+  vehicle.setIcon(vIcon(seg.mode));
+  const dur = reduce?0:(seg.mode==='✈️'? Math.min(4200, 1400+pts.length*20) : 2200);
+  const line=L.polyline([pts[0]],{color:seg.todo?'#FF8FA8':'#1F4FE0',weight:4,opacity:.9}).addTo(trail);
+  const start=performance.now()+ (reduce?0:900);
+  const step=(now)=>{
+    const t=Math.max(0,Math.min(1,(now-start)/Math.max(dur,1)));
+    const e=t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2;
+    const idx=Math.floor(e*(pts.length-1)); vehicle.setLatLng(pts[idx]); line.setLatLngs(pts.slice(0,idx+1));
+    if(t<1) anim=requestAnimationFrame(step); else { vehicle.setIcon(vIcon(stops[i].emoji)); burstAt(pts[pts.length-1],stops[i].burst); done&&done(); }
+  };
+  anim=requestAnimationFrame(step);
+}
+function goTo(i){
+  stopPlay();
+  trail.clearLayers();
+  for(let j=1;j<=i-1;j++) L.polyline(segs[j-1].pts,{color:segs[j-1].todo?'#FF8FA8':'#1F4FE0',weight:4,opacity:.9}).addTo(trail);
+  cur=i; showPanel(i);
+  if(i===0){ vehicle.setLatLng(P.MIA); vehicle.setIcon(vIcon('🧳')); map.flyTo(P.MIA,6,{duration:reduce?0:1}); return; }
+  fly(i);
+}
+function stopPlay(){ playing=false; $('play').textContent='Play the trip'; }
+function playFrom(i){
+  if(!playing)return;
+  if(i>=stops.length){ stopPlay(); return; }
+  cur=i; showPanel(i);
+  if(i===0){ trail.clearLayers(); vehicle.setLatLng(P.MIA); vehicle.setIcon(vIcon('🧳')); map.flyTo(P.MIA,5,{duration:reduce?0:1}); setTimeout(()=>playFrom(1),reduce?400:1600); return; }
+  fly(i,()=>setTimeout(()=>playFrom(i+1),reduce?600:1400));
+}
+$('play').onclick=()=>{ if(playing){ stopPlay(); cancelAnimationFrame(anim); return;} playing=true; $('play').textContent='Pause'; playFrom(cur>=stops.length-1?0:cur===0?0:cur+1); };
+$('next').onclick=()=>{ if(cur<stops.length-1){ const n=cur+1; stopPlay(); cur=n; showPanel(n); fly(n);} };
+$('prev').onclick=()=>{ if(cur>0) goTo(cur-1); };
+const chips=$('chips');
+stops.forEach((s,i)=>{ const b=document.createElement('button'); b.className='chip'; b.role='listitem'; b.textContent=`${s.emoji} ${s.name}`; b.onclick=()=>goTo(i); chips.appendChild(b); });
+showPanel(0);
+} else { document.getElementById('map').innerHTML='<p style="padding:20px">The map couldn’t load. Check your connection and refresh the page.</p>'; }
+
+/* ---------- days ---------- */
+const dl=$('dayList');
+days.forEach(([n,mo,title,items,st])=>{
+  const el=document.createElement('article'); el.className='day';
+  el.innerHTML=`<div class="d"><b>${n}</b>${mo}</div><div><h3>${title}<span class="badge ${st}">${st==='ok'?'Booked':'Gaps to fill'}</span></h3><ul>${items.map(x=>`<li>${x}</li>`).join('')}</ul></div>`;
+  dl.appendChild(el);
+});
+
+/* ---------- todo checklist ---------- */
+const ck=$('checks'); let saved={}; try{saved=JSON.parse(localStorage.getItem('trip-todos')||'{}')}catch(e){}
+todos.forEach(([id,label])=>{
+  const li=document.createElement('li');
+  li.innerHTML=`<label><input type="checkbox" ${saved[id]?'checked':''}><span>${label}</span></label>`;
+  li.querySelector('input').onchange=e=>{ saved[id]=e.target.checked; try{localStorage.setItem('trip-todos',JSON.stringify(saved))}catch(_){} if(e.target.checked) confetti(e.target); };
+  ck.appendChild(li);
+});
+function confetti(el){
+  if(reduce)return; const r=el.getBoundingClientRect();
+  for(let i=0;i<14;i++){ const e=document.createElement('div'); e.className='burst'; e.textContent=['🍋','💙','🇮🇹','🇬🇷','✨'][i%5];
+    e.style.position='fixed'; e.style.left=r.left+'px'; e.style.top=r.top+'px';
+    const a=Math.random()*Math.PI*2,d=50+Math.random()*80; e.style.setProperty('--dx',Math.cos(a)*d+'px'); e.style.setProperty('--dy',Math.sin(a)*d-40+'px'); e.style.setProperty('--r',(Math.random()*120-60)+'deg');
+    e.style.zIndex=9999; document.body.appendChild(e); setTimeout(()=>e.remove(),1500); }
+}
+
+/* ---------- kick off ---------- */
+rollYear(); flapBoard();
+</script>
+</body>
+</html>
