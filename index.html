@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wdth,wght@12..96,75..100,300..800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5.6.0/dist/maplibre-gl.css">
 <style>
 :root{
   --aegean:#1F4FE0;
@@ -89,7 +89,14 @@ h2{font-size:clamp(30px,4.4vw,48px);line-height:1.05;margin:0 0 10px;font-variat
 .lead{color:var(--muted);margin:0 0 26px;max-width:60ch}
 .mapgrid{display:grid;grid-template-columns:1fr 340px;gap:18px}
 @media (max-width:900px){.mapgrid{grid-template-columns:1fr}}
-#map{height:min(70vh,620px);min-height:420px;border-radius:22px;overflow:hidden;background:#cfe0ff;border:1px solid var(--line)}
+.mapwrap{position:relative;min-width:0}
+#map{height:min(72vh,640px);min-height:440px;border-radius:22px;overflow:hidden;background:radial-gradient(circle at 50% 45%,#16296B 0%,#0A1A4A 55%,#050C26 100%);border:1px solid var(--line)}
+.hud{position:absolute;left:12px;top:12px;right:56px;z-index:3;display:flex;align-items:center;gap:10px;width:max-content;max-width:calc(100% - 68px);background:rgba(10,26,74,.82);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);color:#fff;border-radius:14px;padding:8px 12px;font-weight:700;font-size:14px;pointer-events:none;box-shadow:0 6px 20px rgba(0,0,0,.25)}
+.hud .bar{flex:none;width:90px;height:6px;border-radius:9px;background:rgba(255,255,255,.2);overflow:hidden}
+.hud .bar i{display:block;height:100%;width:0;background:var(--lemon);border-radius:9px;transition:width .9s cubic-bezier(.2,.8,.2,1)}
+#hudN{white-space:nowrap;flex:none}
+#hudLeg{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+@media (max-width:560px){.hud .bar{width:44px}.hud{font-size:13px;gap:8px}}
 .panel{background:var(--plaster);border:1px solid var(--line);border-radius:22px;padding:20px;display:flex;flex-direction:column}
 .panel .when{color:var(--aegean);font-weight:700;font-size:15px}
 :root[data-theme="dark"] .panel .when{color:var(--lemon)}
@@ -104,10 +111,28 @@ h2{font-size:clamp(30px,4.4vw,48px);line-height:1.05;margin:0 0 10px;font-variat
 .chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:16px}
 .chip{border:1px solid var(--line);background:var(--plaster);color:var(--ink);border-radius:999px;padding:6px 12px;font-size:14px}
 .chip[aria-current="true"]{background:var(--lemon);border-color:var(--lemon);color:var(--night);font-weight:700}
-.vehicle{font-size:30px;line-height:1;filter:drop-shadow(0 3px 4px rgba(0,0,0,.35));transition:transform .1s linear}
-.pin{width:18px;height:18px;border-radius:50%;background:var(--aegean);border:3px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.35)}
-.pin.todo{background:var(--enrosadira)}
-.pin.home{background:var(--lemon)}
+.vehicle{pointer-events:none;z-index:4}
+.vehicle b{display:block;font-size:34px;line-height:1;filter:drop-shadow(0 8px 6px rgba(0,0,0,.35))}
+.vehicle span{display:block;will-change:transform}
+.vehicle b.pop{animation:pop .6s cubic-bezier(.3,1.7,.5,1)}
+@keyframes pop{0%{transform:scale(.2) rotate(-25deg)}100%{transform:none}}
+.stop{width:18px;height:18px;padding:0;border:0;background:none;cursor:pointer}
+.stop .dot{position:absolute;inset:0;border-radius:50%;background:var(--aegean);border:3px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.35);transition:transform .35s cubic-bezier(.3,1.6,.5,1)}
+.stop::before{content:"";position:absolute;inset:-2px;border-radius:50%;border:2px solid var(--aegean);animation:pulse 2.4s ease-out infinite}
+.stop.todo .dot{background:var(--enrosadira)}.stop.todo::before{border-color:var(--enrosadira)}
+.stop.home .dot{background:var(--lemon)}.stop.home::before{border-color:var(--lemon)}
+.stop:hover .dot,.stop.active .dot{transform:scale(1.45)}
+.stop .lbl{position:absolute;left:50%;bottom:26px;transform:translate(-50%,8px) scale(.9);opacity:0;white-space:nowrap;background:var(--plaster);color:var(--ink);padding:4px 10px;border-radius:999px;font:700 13px/1.2 "Bricolage Grotesque",system-ui,sans-serif;box-shadow:0 6px 16px rgba(0,0,0,.25);transition:opacity .3s,transform .35s cubic-bezier(.3,1.6,.5,1);pointer-events:none}
+.stop:hover .lbl,.stop.active .lbl{opacity:1;transform:translate(-50%,0) scale(1)}
+@keyframes pulse{0%{transform:scale(.9);opacity:.9}100%{transform:scale(2.8);opacity:0}}
+.swap{animation:swapIn .6s cubic-bezier(.2,.8,.2,1) both}
+.emoji.swap{animation:emojiIn .7s cubic-bezier(.3,1.6,.5,1) both}
+@keyframes swapIn{from{opacity:0;transform:translateY(14px);filter:blur(4px)}to{opacity:1;transform:none;filter:none}}
+@keyframes emojiIn{from{opacity:0;transform:scale(.3) rotate(-30deg)}to{opacity:1;transform:none}}
+.chip{transition:background .3s,border-color .3s,transform .3s cubic-bezier(.3,1.6,.5,1)}
+.chip:hover{transform:translateY(-2px)}
+.chip.done{background:#DCE6FF;border-color:#DCE6FF;color:var(--aegean-deep)}
+.chip[aria-current="true"]{transform:translateY(-2px) scale(1.06)}
 .burst{position:absolute;pointer-events:none;font-size:26px;animation:burst 1.4s ease-out forwards}
 @keyframes burst{0%{opacity:1;transform:translate(0,0) scale(.6)}100%{opacity:0;transform:translate(var(--dx),var(--dy)) scale(1.2) rotate(var(--r))}}
 
@@ -133,7 +158,7 @@ h2{font-size:clamp(30px,4.4vw,48px);line-height:1.05;margin:0 0 10px;font-variat
 .checks input{width:22px;height:22px;accent-color:var(--lemon);margin-top:2px;flex:none}
 .checks input:checked + span{text-decoration:line-through;opacity:.55}
 footer{padding:40px 16px 60px;text-align:center;color:var(--muted);font-size:15px}
-.leaflet-container{font-family:inherit}
+.maplibregl-map{font-family:inherit}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
 </style>
 </head>
@@ -164,7 +189,10 @@ footer{padding:40px 16px 60px;text-align:center;color:var(--muted);font-size:15p
     <h2>Follow the route</h2>
     <p class="lead">Press play and watch us hop from city to city, or tap a stop to jump straight there.</p>
     <div class="mapgrid">
-      <div id="map" role="application" aria-label="Map of the trip route"></div>
+      <div class="mapwrap">
+        <div id="map" role="application" aria-label="Map of the trip route"></div>
+        <div class="hud" aria-hidden="true"><span id="hudN">1 / 10</span><span class="bar"><i id="hudBar"></i></span><span id="hudLeg">🌴 Starting in Miami</span></div>
+      </div>
       <aside class="panel" aria-live="polite">
         <div class="emoji" id="pEmoji">🌴</div>
         <div class="when" id="pWhen">Fri Nov 20</div>
@@ -202,7 +230,7 @@ footer{padding:40px 16px 60px;text-align:center;color:var(--muted);font-size:15p
 
 <footer>Made for Shania, with love and too many trains. Ciao, Miami! 🍋</footer>
 
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/maplibre-gl@5.6.0/dist/maplibre-gl.js"></script>
 <script>
 const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -328,98 +356,218 @@ renderCD(); setInterval(renderCD,1000);
 
 /* ---------- map ---------- */
 const $=id=>document.getElementById(id);
-if(window.L){
-const map=L.map('map',{zoomControl:true,scrollWheelZoom:false,worldCopyJump:false}).setView([41,12],5);
-L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',{
-  attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/">CARTO</a>',subdomains:'abcd',maxZoom:18
-}).addTo(map);
+const ll=k=>[P[k][1],P[k][0]];
+const BLUE='#1F4FE0', PINK='#FF8FA8';
+const ZOOM={MIA:10.5,VCE:12.2,ATH:11.8,JTR:11.4,ROM:11.8,FLR:12.6,BZO:12,DOL:10.8,MIL:12.2};
+const short=s=>s.name.replace('Home to ','');
+const rad=d=>d*Math.PI/180, deg=r=>r*180/Math.PI;
 
-function curve(a,b,bend=0.18,n=80){
-  const [y1,x1]=a,[y2,x2]=b; const mx=(x1+x2)/2,my=(y1+y2)/2; const dx=x2-x1,dy=y2-y1;
-  const cx=mx-dy*bend, cy=my+dx*bend; const pts=[];
-  for(let i=0;i<=n;i++){const t=i/n; pts.push([(1-t)*(1-t)*y1+2*(1-t)*t*cy+t*t*y2,(1-t)*(1-t)*x1+2*(1-t)*t*cx+t*t*x2]);}
-  return pts;
+function gc(a,b,n){
+  const [l1,p1]=a.map(rad),[l2,p2]=b.map(rad);
+  const d=2*Math.asin(Math.sqrt(Math.sin((p2-p1)/2)**2+Math.cos(p1)*Math.cos(p2)*Math.sin((l2-l1)/2)**2));
+  const out=[];
+  for(let i=0;i<=n;i++){
+    const f=i/n,A=Math.sin((1-f)*d)/Math.sin(d),B=Math.sin(f*d)/Math.sin(d);
+    const x=A*Math.cos(p1)*Math.cos(l1)+B*Math.cos(p2)*Math.cos(l2), y=A*Math.cos(p1)*Math.sin(l1)+B*Math.cos(p2)*Math.sin(l2), z=A*Math.sin(p1)+B*Math.sin(p2);
+    out.push([deg(Math.atan2(y,x)),deg(Math.atan2(z,Math.hypot(x,y)))]);
+  }
+  return out;
 }
-// build route segments between stops
+function arc(a,b,k,n){
+  const pts=gc(a,b,n), dx=b[0]-a[0], dy=b[1]-a[1], len=Math.hypot(dx,dy)||1;
+  return pts.map(([x,y],i)=>{ const s=Math.sin(Math.PI*i/n)*k*len; return [x-dy/len*s, y+dx/len*s]; });
+}
 const segs=[];
 for(let i=1;i<stops.length;i++){
-  const chain=[stops[i-1].k,...(stops[i].via||[]),stops[i].k];
-  let pts=[];
+  const chain=[stops[i-1].k,...(stops[i].via||[]),stops[i].k], mode=stops[i].mode; let pts=[];
   for(let j=1;j<chain.length;j++){
-    const mode=stops[i].mode; const bend = mode==='✈️'?0.2:0.04;
-    const c=curve(P[chain[j-1]],P[chain[j]],bend, mode==='✈️'?90:40); if(j>1)c.shift(); pts=pts.concat(c);
+    const c=arc(ll(chain[j-1]),ll(chain[j]),mode==='✈️'?0.14:0.04,mode==='✈️'?120:50); if(j>1)c.shift(); pts=pts.concat(c);
   }
-  segs.push({pts,mode:stops[i].mode,todo:stops[i].todo});
+  segs.push({pts,mode,todo:!!stops[i].todo});
 }
-// faint full route
-segs.forEach(s=>L.polyline(s.pts,{color:s.todo?'#FF8FA8':'#1F4FE0',weight:2,opacity:.35,dashArray:s.mode==='✈️'?'2 8':null}).addTo(map));
-const trail=L.layerGroup().addTo(map);
-// pins
-const pinFor=(cls)=>L.divIcon({className:'',html:`<div class="pin ${cls}"></div>`,iconSize:[18,18],iconAnchor:[9,9]});
-const seen=new Set();
-stops.forEach((s,i)=>{ if(seen.has(s.k))return; seen.add(s.k);
-  L.marker(P[s.k],{icon:pinFor(s.k==='MIA'?'home':s.todo?'todo':''),keyboard:false}).addTo(map).bindTooltip(s.name.replace('Home to ','')).on('click',()=>goTo(i));
-});
-const vIcon=(e)=>L.divIcon({className:'',html:`<div class="vehicle">${e}</div>`,iconSize:[34,34],iconAnchor:[17,17]});
-const vehicle=L.marker(P.MIA,{icon:vIcon('🧳'),interactive:false,zIndexOffset:1000}).addTo(map);
 
-let cur=0, playing=false, anim=null;
-function showPanel(i){
-  const s=stops[i];
-  $('pEmoji').textContent=s.emoji; $('pWhen').textContent=s.when; $('pTitle').textContent=s.name; $('pText').textContent=s.text;
-  document.querySelectorAll('.chip').forEach((c,j)=>c.setAttribute('aria-current',j===i?'true':'false'));
-  $('prev').disabled=i===0; $('next').disabled=i===stops.length-1;
+if(window.maplibregl){
+const map=new maplibregl.Map({
+  container:'map', style:'https://tiles.openfreemap.org/styles/liberty',
+  center:[-35,36], zoom:1.6, pitch:0, scrollZoom:false, maxPitch:75,
+  attributionControl:{compact:true}
+});
+map.addControl(new maplibregl.NavigationControl({visualizePitch:true}),'top-right');
+map.on('style.load',()=>{
+  try{ map.setProjection({type:'globe'}); }catch(e){}
+  try{ map.setSky({'sky-color':'#7FB2FF','horizon-color':'#DCE6FF','fog-color':'#FFFFFF','sky-horizon-blend':.6,'horizon-fog-blend':.6,'fog-ground-blend':.4,'atmosphere-blend':['interpolate',['linear'],['zoom'],0,1,6,.4,10,0]}); }catch(e){}
+});
+
+const fc=f=>({type:'FeatureCollection',features:f});
+const line=(c,todo)=>({type:'Feature',properties:{todo:todo?1:0},geometry:{type:'LineString',coordinates:c}});
+const colorExp=['case',['==',['get','todo'],1],PINK,BLUE];
+let ready=false;
+
+map.on('load',()=>{
+  const dem={type:'raster-dem',tiles:['https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png'],encoding:'terrarium',tileSize:256,maxzoom:13,attribution:'Terrain &copy; Mapzen, AWS'};
+  map.addSource('dem',dem); map.addSource('dem-hills',dem);
+  map.addLayer({id:'hills',type:'hillshade',source:'dem-hills',paint:{'hillshade-exaggeration':.35,'hillshade-shadow-color':'#16296B','hillshade-highlight-color':'#FFFFFF'}}, map.getLayer('waterway_tunnel')?'waterway_tunnel':undefined);
+
+  map.addSource('route',{type:'geojson',data:fc(segs.map(s=>line(s.pts,s.todo)))});
+  map.addLayer({id:'route',type:'line',source:'route',layout:{'line-cap':'round','line-join':'round'},paint:{'line-color':colorExp,'line-width':2.5,'line-opacity':.6,'line-dasharray':[0,4,3]}});
+  map.addSource('trail',{type:'geojson',data:fc([])});
+  map.addLayer({id:'trail-glow',type:'line',source:'trail',layout:{'line-cap':'round','line-join':'round'},paint:{'line-color':colorExp,'line-width':16,'line-opacity':.28,'line-blur':10}});
+  map.addLayer({id:'trail',type:'line',source:'trail',layout:{'line-cap':'round','line-join':'round'},paint:{'line-color':colorExp,'line-width':4.5}});
+
+  // marching ants on the planned route
+  const dashes=[[0,4,3],[.5,4,2.5],[1,4,2],[1.5,4,1.5],[2,4,1],[2.5,4,.5],[3,4,0],[0,.5,3,3.5],[0,1,3,3],[0,1.5,3,2.5],[0,2,3,2],[0,2.5,3,1.5],[0,3,3,1],[0,3.5,3,.5]];
+  let dStep=-1;
+  const ants=ts=>{ const n=Math.floor(ts/70)%dashes.length; if(n!==dStep){ dStep=n; map.setPaintProperty('route','line-dasharray',dashes[n]); } requestAnimationFrame(ants); };
+  if(!reduce) requestAnimationFrame(ants);
+  ready=true;
+});
+
+// stop pins
+const pinEls={};
+stops.forEach((s,i)=>{
+  if(pinEls[s.k]) return;
+  const el=document.createElement('button');
+  el.className='stop '+(s.k==='MIA'?'home':s.todo?'todo':'');
+  el.setAttribute('aria-label',short(s));
+  el.innerHTML=`<span class="dot"></span><span class="lbl">${s.emoji} ${short(s)}</span>`;
+  el.addEventListener('click',e=>{ e.stopPropagation(); goTo(i); });
+  new maplibregl.Marker({element:el}).setLngLat(ll(s.k)).addTo(map);
+  pinEls[s.k]=el;
+});
+
+// the thing that travels
+const vEl=document.createElement('div'); vEl.className='vehicle'; vEl.innerHTML='<b><span>🧳</span></b>';
+const vPop=vEl.firstChild, vIn=vPop.firstChild;
+const vehicle=new maplibregl.Marker({element:vEl,rotationAlignment:'viewport',pitchAlignment:'viewport'}).setLngLat(ll('MIA')).addTo(map);
+let ang=0;
+function setV(e){ vIn.textContent=e; vIn.style.transform=''; ang=0; vPop.classList.remove('pop'); void vPop.offsetWidth; vPop.classList.add('pop'); }
+function aim(a,b){
+  const p=map.project(a), q=map.project(b), dx=q.x-p.x, dy=q.y-p.y;
+  if(Math.hypot(dx,dy)<.01) return;
+  if(vIn.textContent==='✈️'){
+    const target=deg(Math.atan2(dy,dx))+45; ang+=(((target-ang)%360+540)%360-180)*.25;
+    vIn.style.transform=`rotate(${ang}deg)`;
+  } else vIn.style.transform=dx>0?'scaleX(-1)':'none';
 }
-function burstAt(latlng,chars){
-  if(reduce)return;
-  const pt=map.latLngToContainerPoint(latlng); const box=$('map');
-  [...chars].filter(c=>c.trim()).forEach((c,n)=>{ for(let r=0;r<3;r++){
+
+function setTrail(done,partial){
+  if(!ready) return;
+  const f=segs.slice(0,done).map(s=>line(s.pts,s.todo));
+  if(partial&&partial.length>1) f.push(line(partial,segs[done].todo));
+  map.getSource('trail').setData(fc(f));
+}
+function burstAt(lnglat,chars){
+  if(reduce) return;
+  const pt=map.project(lnglat), box=$('map');
+  [...chars].filter(c=>c.trim()).forEach(c=>{ for(let r=0;r<4;r++){
     const e=document.createElement('div'); e.className='burst'; e.textContent=c;
     e.style.left=(pt.x-13)+'px'; e.style.top=(pt.y-13)+'px';
-    const a=Math.random()*Math.PI*2, d=60+Math.random()*70;
-    e.style.setProperty('--dx',Math.cos(a)*d+'px'); e.style.setProperty('--dy',Math.sin(a)*d-30+'px'); e.style.setProperty('--r',(Math.random()*80-40)+'deg');
-    e.style.zIndex=1000; box.appendChild(e); setTimeout(()=>e.remove(),1500);
+    const a=Math.random()*Math.PI*2, d=60+Math.random()*90;
+    e.style.setProperty('--dx',Math.cos(a)*d+'px'); e.style.setProperty('--dy',Math.sin(a)*d-40+'px'); e.style.setProperty('--r',(Math.random()*90-45)+'deg');
+    e.style.zIndex=5; box.appendChild(e); setTimeout(()=>e.remove(),1500);
   }});
 }
-function fly(i,done){
-  const seg=segs[i-1]; const pts=seg.pts;
-  cancelAnimationFrame(anim);
-  map.flyToBounds(L.latLngBounds(pts).pad(.25),{duration:reduce?0:1.1,maxZoom:8});
-  vehicle.setIcon(vIcon(seg.mode));
-  const dur = reduce?0:(seg.mode==='✈️'? Math.min(4200, 1400+pts.length*20) : 2200);
-  const line=L.polyline([pts[0]],{color:seg.todo?'#FF8FA8':'#1F4FE0',weight:4,opacity:.9}).addTo(trail);
-  const start=performance.now()+ (reduce?0:900);
-  const step=(now)=>{
-    const t=Math.max(0,Math.min(1,(now-start)/Math.max(dur,1)));
-    const e=t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2;
-    const idx=Math.floor(e*(pts.length-1)); vehicle.setLatLng(pts[idx]); line.setLatLngs(pts.slice(0,idx+1));
-    if(t<1) anim=requestAnimationFrame(step); else { vehicle.setIcon(vIcon(stops[i].emoji)); burstAt(pts[pts.length-1],stops[i].burst); done&&done(); }
-  };
-  anim=requestAnimationFrame(step);
+
+let cur=0, playing=false, raf=0, token=0, orbitSeq=0, timers=[];
+const sleep=ms=>new Promise(r=>timers.push(setTimeout(r,ms)));
+const moveEnd=()=>new Promise(r=>map.once('moveend',r));
+async function camTo(o){ if(reduce){ map.jumpTo(o); return; } map.flyTo({...o,essential:true}); await moveEnd(); }
+function terrain(on){ if(!ready) return; try{ map.setTerrain(on?{source:'dem',exaggeration:1.5}:null); }catch(e){} }
+function clearAll(){ idle=false; token++; orbitSeq++; cancelAnimationFrame(raf); timers.forEach(clearTimeout); timers=[]; map.stop(); }
+function orbit(){
+  if(reduce) return;
+  const id=++orbitSeq; let last=performance.now();
+  const spin=now=>{ if(id!==orbitSeq) return; map.setBearing(map.getBearing()+(now-last)*.005); last=now; requestAnimationFrame(spin); };
+  requestAnimationFrame(spin);
 }
-function goTo(i){
-  stopPlay();
-  trail.clearLayers();
-  for(let j=1;j<=i-1;j++) L.polyline(segs[j-1].pts,{color:segs[j-1].todo?'#FF8FA8':'#1F4FE0',weight:4,opacity:.9}).addTo(trail);
-  cur=i; showPanel(i);
-  if(i===0){ vehicle.setLatLng(P.MIA); vehicle.setIcon(vIcon('🧳')); map.flyTo(P.MIA,6,{duration:reduce?0:1}); return; }
-  fly(i);
+map.getCanvas().addEventListener('pointerdown',()=>orbitSeq++);
+
+function hud(i){
+  $('hudLeg').textContent=i===0?'🌴 Starting in Miami':`${stops[i].mode} ${short(stops[i-1])} → ${short(stops[i])}`;
+  $('hudN').textContent=`${i+1} / ${stops.length}`;
+  $('hudBar').style.width=(i/(stops.length-1)*100)+'%';
 }
+function showPanel(i){
+  const s=stops[i];
+  [['pEmoji',s.emoji],['pWhen',s.when],['pTitle',s.name],['pText',s.text]].forEach(([id,v],n)=>{
+    const e=$(id); e.textContent=v; e.classList.remove('swap'); void e.offsetWidth; e.style.animationDelay=n*70+'ms'; e.classList.add('swap');
+  });
+  document.querySelectorAll('.chip').forEach((c,j)=>{ c.setAttribute('aria-current',j===i?'true':'false'); c.classList.toggle('done',j<i); });
+  Object.values(pinEls).forEach(el=>el.classList.remove('active')); pinEls[s.k].classList.add('active');
+  $('prev').disabled=i===0; $('next').disabled=i===stops.length-1;
+  hud(i);
+}
+
+async function arrive(i,t){
+  const s=stops[i]; setV(s.emoji); burstAt(ll(s.k),s.burst);
+  terrain(s.k==='DOL');
+  await camTo({center:ll(s.k),zoom:ZOOM[s.k],pitch:s.k==='DOL'?72:58,bearing:map.getBearing()+(i%2?35:-35),duration:2600,curve:1.2});
+  if(t===token) orbit();
+}
+async function leg(i,t){
+  const seg=segs[i-1], pts=seg.pts;
+  orbitSeq++; terrain(false); setTrail(i-1,null);
+  vehicle.setLngLat(pts[0]); setV(seg.mode);
+  const b=pts.reduce((b,p)=>b.extend(p),new maplibregl.LngLatBounds(pts[0],pts[0]));
+  const cam=map.cameraForBounds(b,{padding:{top:90,bottom:60,left:60,right:60}})||{center:b.getCenter(),zoom:5};
+  const z0=Math.min(cam.zoom,8.5), b0=seg.mode==='✈️'?-10:10;
+  await camTo({center:cam.center,zoom:z0,pitch:30,bearing:b0,duration:2200,curve:1.6});
+  if(t!==token) return;
+  const dur=reduce?0:(seg.mode==='✈️'?Math.min(5600,2400+pts.length*14):3000), start=performance.now();
+  await new Promise(res=>{
+    const step=now=>{
+      if(t!==token) return res();
+      const u=Math.max(0,Math.min(1,(now-start)/Math.max(dur,1))), e=u<.5?4*u*u*u:1-Math.pow(-2*u+2,3)/2;
+      const f=e*(pts.length-1), k=Math.min(pts.length-2,Math.floor(f)), r=f-k;
+      const p=[pts[k][0]+(pts[k+1][0]-pts[k][0])*r, pts[k][1]+(pts[k+1][1]-pts[k][1])*r];
+      vehicle.setLngLat(p); setTrail(i-1,[...pts.slice(0,k+1),p]); aim(pts[k],pts[k+1]);
+      if(!reduce) map.jumpTo({zoom:z0+.35*e,bearing:b0+8*e});
+      if(u<1) raf=requestAnimationFrame(step); else res();
+    };
+    raf=requestAnimationFrame(step);
+  });
+  if(t!==token) return;
+  setTrail(i,null);
+  await arrive(i,t);
+}
+
 function stopPlay(){ playing=false; $('play').textContent='Play the trip'; }
-function playFrom(i){
-  if(!playing)return;
-  if(i>=stops.length){ stopPlay(); return; }
-  cur=i; showPanel(i);
-  if(i===0){ trail.clearLayers(); vehicle.setLatLng(P.MIA); vehicle.setIcon(vIcon('🧳')); map.flyTo(P.MIA,5,{duration:reduce?0:1}); setTimeout(()=>playFrom(1),reduce?400:1600); return; }
-  fly(i,()=>setTimeout(()=>playFrom(i+1),reduce?600:1400));
+async function goTo(i){
+  clearAll(); stopPlay(); const t=token; cur=i; showPanel(i);
+  if(i===0){ setTrail(0,null); vehicle.setLngLat(ll('MIA')); await arrive(0,t); return; }
+  await leg(i,t);
 }
-$('play').onclick=()=>{ if(playing){ stopPlay(); cancelAnimationFrame(anim); return;} playing=true; $('play').textContent='Pause'; playFrom(cur>=stops.length-1?0:cur===0?0:cur+1); };
-$('next').onclick=()=>{ if(cur<stops.length-1){ const n=cur+1; stopPlay(); cur=n; showPanel(n); fly(n);} };
+async function play(){
+  clearAll(); const t=token; playing=true; $('play').textContent='Pause';
+  const from=cur>=stops.length-1?0:cur;
+  if(from===0){
+    cur=0; showPanel(0); setTrail(0,null); vehicle.setLngLat(ll('MIA')); setV('🧳'); terrain(false);
+    await camTo({center:ll('MIA'),zoom:9.5,pitch:50,bearing:-20,duration:2600}); if(t!==token) return;
+    await sleep(reduce?300:900); if(t!==token) return;
+  }
+  for(let j=from+1;j<stops.length;j++){
+    cur=j; showPanel(j); await leg(j,t); if(t!==token) return;
+    await sleep(reduce?600:2600); if(t!==token) return;
+  }
+  orbitSeq++; stopPlay();
+  await camTo({center:[-28,40],zoom:2.3,pitch:0,bearing:0,duration:4000});
+}
+$('play').onclick=()=>{ if(playing){ clearAll(); stopPlay(); return; } play(); };
+$('next').onclick=()=>{ if(cur<stops.length-1) goTo(cur+1); };
 $('prev').onclick=()=>{ if(cur>0) goTo(cur-1); };
+document.querySelector('.cta').addEventListener('click',()=>setTimeout(()=>{ if(!playing) play(); },700));
 const chips=$('chips');
 stops.forEach((s,i)=>{ const b=document.createElement('button'); b.className='chip'; b.role='listitem'; b.textContent=`${s.emoji} ${s.name}`; b.onclick=()=>goTo(i); chips.appendChild(b); });
 showPanel(0);
-} else { document.getElementById('map').innerHTML='<p style="padding:20px">The map couldn’t load. Check your connection and refresh the page.</p>'; }
+
+// gentle globe spin until the map scrolls into view, then swing over to the route
+let idle=!reduce;
+const idleSpin=()=>{ if(!idle) return; map.setCenter([map.getCenter().lng+.04,map.getCenter().lat]); requestAnimationFrame(idleSpin); };
+map.on('load',()=>idleSpin());
+const stopIdle=()=>{ idle=false; };
+map.getCanvas().addEventListener('pointerdown',stopIdle);
+new IntersectionObserver((en,ob)=>{ if(en[0].isIntersecting){ ob.disconnect(); setTimeout(()=>{ if(playing||cur) return; stopIdle(); map.flyTo({center:[-30,40],zoom:2.4,pitch:15,duration:3000,essential:true}); },400); } },{threshold:.4}).observe($('map'));
+} else { document.getElementById('map').innerHTML='<p style="padding:20px;color:#fff">The map couldn’t load. Check your connection and refresh the page.</p>'; }
 
 /* ---------- days ---------- */
 const dl=$('dayList');
