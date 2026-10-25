@@ -92,6 +92,8 @@ h2{font-size:clamp(30px,4.4vw,48px);line-height:1.05;margin:0 0 10px;font-variat
 .mapwrap{position:relative;min-width:0}
 #map{height:min(72vh,640px);min-height:440px;border-radius:22px;overflow:hidden;background:radial-gradient(circle at 50% 45%,#16296B 0%,#0A1A4A 55%,#050C26 100%);border:1px solid var(--line)}
 .hud{position:absolute;left:12px;top:12px;right:56px;z-index:3;display:flex;align-items:center;gap:10px;width:max-content;max-width:calc(100% - 68px);background:rgba(10,26,74,.82);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);color:#fff;border-radius:14px;padding:8px 12px;font-weight:700;font-size:14px;pointer-events:none;box-shadow:0 6px 20px rgba(0,0,0,.25)}
+.layerbtn{position:absolute;left:12px;top:60px;z-index:3;border:0;border-radius:999px;padding:9px 14px;background:rgba(10,26,74,.85);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);color:#fff;font:700 14px/1 "Bricolage Grotesque",system-ui,sans-serif;cursor:pointer;box-shadow:0 6px 20px rgba(0,0,0,.25);transition:transform .25s cubic-bezier(.3,1.6,.5,1)}
+.layerbtn:hover{transform:translateY(-2px)}
 .hud .bar{flex:none;width:90px;height:6px;border-radius:9px;background:rgba(255,255,255,.2);overflow:hidden}
 .hud .bar i{display:block;height:100%;width:0;background:var(--lemon);border-radius:9px;transition:width .9s cubic-bezier(.2,.8,.2,1)}
 #hudN{white-space:nowrap;flex:none}
@@ -191,6 +193,7 @@ footer{padding:40px 16px 60px;text-align:center;color:var(--muted);font-size:15p
     <div class="mapgrid">
       <div class="mapwrap">
         <div id="map" role="application" aria-label="Map of the trip route"></div>
+        <button class="layerbtn" id="layerBtn" type="button">🗺️ Map view</button>
         <div class="hud" aria-hidden="true"><span id="hudN">1 / 10</span><span class="bar"><i id="hudBar"></i></span><span id="hudLeg">🌴 Starting in Miami</span></div>
       </div>
       <aside class="panel" aria-live="polite">
@@ -358,7 +361,8 @@ renderCD(); setInterval(renderCD,1000);
 const $=id=>document.getElementById(id);
 const ll=k=>[P[k][1],P[k][0]];
 const BLUE='#1F4FE0', PINK='#FF8FA8';
-const ZOOM={MIA:10.5,VCE:12.2,ATH:11.8,JTR:11.4,ROM:11.8,FLR:12.6,BZO:12,DOL:10.8,MIL:12.2};
+const ZOOM={MIA:13,VCE:15,ATH:15,JTR:14.2,ROM:15,FLR:15.4,BZO:14.6,DOL:12.6,MIL:15};
+const TERRAIN=new Set(['DOL','JTR','BZO']);
 const short=s=>s.name.replace('Home to ','');
 const rad=d=>d*Math.PI/180, deg=r=>r*180/Math.PI;
 
@@ -386,10 +390,32 @@ for(let i=1;i<stops.length;i++){
   segs.push({pts,mode,todo:!!stops[i].todo});
 }
 
+const TOURS={
+  VCE:{v:'🛶',label:'🛶 Gondola down the Grand Canal',zoom:15.4,dur:11000,burst:'🎭🛶✨',pts:[[45.4386,12.3200],[45.4411,12.3222],[45.4423,12.3260],[45.4437,12.3296],[45.4406,12.3341],[45.4380,12.3358],[45.4364,12.3337],[45.4345,12.3270],[45.4316,12.3285],[45.4310,12.3345],[45.4322,12.3400]]},
+  ATH:{v:'🚶',label:'🚶 Walk up to the Acropolis',zoom:15.6,dur:9000,burst:'🏛️🫒✨',pts:[[37.9838,23.7275],[37.9800,23.7262],[37.9761,23.7256],[37.9744,23.7266],[37.9725,23.7295],[37.9716,23.7262],[37.9715,23.7267]]},
+  JTR:{v:'⛵',label:'⛵ Sail to the volcano and Oia',zoom:13.2,dur:12000,burst:'🌅🌋💙',pts:[[36.4185,25.4290],[36.4120,25.4120],[36.4045,25.4000],[36.3985,25.3790],[36.4180,25.3760],[36.4400,25.3800],[36.4560,25.3810],[36.4615,25.3740]]},
+  ROM:{v:'🛵',label:'🛵 Vespa from the Colosseum to St Peter’s',zoom:14.6,dur:11000,burst:'🍦🛵⛲',pts:[[41.8902,12.4922],[41.8935,12.4880],[41.8958,12.4826],[41.9009,12.4833],[41.8986,12.4769],[41.8992,12.4731],[41.9016,12.4663],[41.9022,12.4573]]},
+  FLR:{v:'🚲',label:'🚲 Bike to Piazzale Michelangelo',zoom:15.2,dur:10000,burst:'🍷🌇🎨',pts:[[43.7765,11.2480],[43.7731,11.2560],[43.7696,11.2558],[43.7685,11.2556],[43.7680,11.2531],[43.7655,11.2545],[43.7629,11.2650]]},
+  BZO:{v:'🚡',label:'🚡 Cable car up to the Renon plateau',zoom:13.6,dur:8000,burst:'🍎🏔️🥨',pts:[[46.4985,11.3600],[46.5125,11.3740],[46.5265,11.3880]]},
+  DOL:{v:'🚠',label:'🚠 Cable car up to Seceda',zoom:13.2,dur:8000,burst:'❄️🏔️⛷️',pts:[[46.5747,11.6717],[46.5870,11.6980],[46.6000,11.7247]]},
+  MIL:{v:'🚋',label:'🚋 Tram past the Duomo to the Castello',zoom:14.8,dur:10000,burst:'☕🛍️🚋',pts:[[45.4855,9.2047],[45.4790,9.1980],[45.4710,9.1930],[45.4642,9.1915],[45.4655,9.1865],[45.4705,9.1795]]}
+};
+function spline(p,n){
+  const out=[];
+  for(let i=0;i<p.length-1;i++){
+    const p0=p[i-1]||p[i],p1=p[i],p2=p[i+1],p3=p[i+2]||p2;
+    for(let j=0;j<n;j++){ const t=j/n,t2=t*t,t3=t2*t;
+      out.push([0,1].map(d=>.5*(2*p1[d]+(-p0[d]+p2[d])*t+(2*p0[d]-5*p1[d]+4*p2[d]-p3[d])*t2+(-p0[d]+3*p1[d]-3*p2[d]+p3[d])*t3))); }
+  }
+  out.push(p[p.length-1]); return out;
+}
+Object.values(TOURS).forEach(T=>{ T.path=spline(T.pts.map(([a,b])=>[b,a]),20); });
+
 if(window.maplibregl){
 const map=new maplibregl.Map({
   container:'map', style:'https://tiles.openfreemap.org/styles/liberty',
   center:[-35,36], zoom:1.6, pitch:0, scrollZoom:false, maxPitch:75,
+  fadeDuration:120, maxTileCacheSize:2000, maxTileCacheZoomLevels:8, refreshExpiredTiles:false,
   attributionControl:{compact:true}
 });
 map.addControl(new maplibregl.NavigationControl({visualizePitch:true}),'top-right');
@@ -403,13 +429,32 @@ const line=(c,todo)=>({type:'Feature',properties:{todo:todo?1:0},geometry:{type:
 const colorExp=['case',['==',['get','todo'],1],PINK,BLUE];
 let ready=false;
 
+let baseLayers=[], sat=true;
+try{ sat=localStorage.getItem('trip-sat')!=='0'; }catch(e){}
+function setSat(on){
+  sat=on; $('layerBtn').textContent=on?'🗺️ Map view':'🛰️ Satellite';
+  try{ localStorage.setItem('trip-sat',on?'1':'0'); }catch(e){}
+  if(!ready) return;
+  baseLayers.forEach(id=>map.setLayoutProperty(id,'visibility',on?'none':'visible'));
+  ['sat','sat-lo'].forEach(id=>map.setLayoutProperty(id,'visibility',on?'visible':'none'));
+}
 map.on('load',()=>{
+  baseLayers=map.getStyle().layers.filter(l=>l.type!=='symbol'||/^(poi_|road_one_way|highway-shield|road_shield)/.test(l.id)).map(l=>l.id);
+  const firstLabel=map.getStyle().layers.find(l=>l.type==='symbol')?.id;
+  const esri=['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'];
+  map.addSource('sat-lo',{type:'raster',tiles:esri,tileSize:256,maxzoom:11});
+  map.addSource('sat',{type:'raster',tiles:esri,tileSize:256,maxzoom:19,attribution:'Imagery &copy; Esri, Maxar, Earthstar Geographics'});
+  map.addLayer({id:'sat-lo',type:'raster',source:'sat-lo',paint:{'raster-fade-duration':0,'raster-saturation':.1}},firstLabel);
+  map.addLayer({id:'sat',type:'raster',source:'sat',paint:{'raster-fade-duration':0,'raster-saturation':.1,'raster-contrast':.05}},firstLabel);
   const dem={type:'raster-dem',tiles:['https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png'],encoding:'terrarium',tileSize:256,maxzoom:13,attribution:'Terrain &copy; Mapzen, AWS'};
   map.addSource('dem',dem); map.addSource('dem-hills',dem);
   map.addLayer({id:'hills',type:'hillshade',source:'dem-hills',paint:{'hillshade-exaggeration':.35,'hillshade-shadow-color':'#16296B','hillshade-highlight-color':'#FFFFFF'}}, map.getLayer('waterway_tunnel')?'waterway_tunnel':undefined);
 
   map.addSource('route',{type:'geojson',data:fc(segs.map(s=>line(s.pts,s.todo)))});
   map.addLayer({id:'route',type:'line',source:'route',layout:{'line-cap':'round','line-join':'round'},paint:{'line-color':colorExp,'line-width':2.5,'line-opacity':.6,'line-dasharray':[0,4,3]}});
+  map.addSource('tour',{type:'geojson',data:fc([])});
+  map.addLayer({id:'tour-glow',type:'line',source:'tour',layout:{'line-cap':'round','line-join':'round'},paint:{'line-color':'#FFD84A','line-width':14,'line-opacity':.35,'line-blur':8}});
+  map.addLayer({id:'tour',type:'line',source:'tour',layout:{'line-cap':'round','line-join':'round'},paint:{'line-color':'#FFD84A','line-width':4}});
   map.addSource('trail',{type:'geojson',data:fc([])});
   map.addLayer({id:'trail-glow',type:'line',source:'trail',layout:{'line-cap':'round','line-join':'round'},paint:{'line-color':colorExp,'line-width':16,'line-opacity':.28,'line-blur':10}});
   map.addLayer({id:'trail',type:'line',source:'trail',layout:{'line-cap':'round','line-join':'round'},paint:{'line-color':colorExp,'line-width':4.5}});
@@ -419,7 +464,8 @@ map.on('load',()=>{
   let dStep=-1;
   const ants=ts=>{ const n=Math.floor(ts/70)%dashes.length; if(n!==dStep){ dStep=n; map.setPaintProperty('route','line-dasharray',dashes[n]); } requestAnimationFrame(ants); };
   requestAnimationFrame(ants);
-  ready=true;
+  baseLayers.push('hills');
+  ready=true; setSat(sat);
 });
 
 // stop pins
@@ -447,7 +493,7 @@ function aim(a,b){
   if(vIn.textContent==='✈️'){
     const target=deg(Math.atan2(dy,dx))+45; ang+=(((target-ang)%360+540)%360-180)*.25;
     vIn.style.transform=`rotate(${ang}deg)`;
-  } else vIn.style.transform=dx>0?'scaleX(-1)':'none';
+  } else vIn.style.transform='none';
 }
 
 function heading(a,b){
@@ -460,6 +506,7 @@ function setTrail(done,partial){
   if(partial&&partial.length>1) f.push(line(partial,segs[done].todo));
   map.getSource('trail').setData(fc(f));
 }
+function setTour(c){ if(ready) map.getSource('tour').setData(fc(c&&c.length>1?[line(c,0)]:[])); }
 function burstAt(lnglat,chars){
   const pt=map.project(lnglat), box=$('map');
   [...chars].filter(c=>c.trim()).forEach(c=>{ for(let r=0;r<4;r++){
@@ -479,7 +526,7 @@ function terrain(on){ if(!ready) return; try{ map.setTerrain(on?{source:'dem',ex
 function clearAll(){ idle=false; token++; orbitSeq++; cancelAnimationFrame(raf); timers.forEach(clearTimeout); timers=[]; map.stop(); }
 function orbit(){
   const id=++orbitSeq; let last=performance.now();
-  const spin=now=>{ if(id!==orbitSeq) return; map.setBearing(map.getBearing()+(now-last)*.005); last=now; requestAnimationFrame(spin); };
+  const spin=now=>{ if(id!==orbitSeq) return; map.setBearing(map.getBearing()+(now-last)*.0025); last=now; requestAnimationFrame(spin); };
   requestAnimationFrame(spin);
 }
 map.getCanvas().addEventListener('pointerdown',()=>orbitSeq++);
@@ -500,15 +547,43 @@ function showPanel(i){
   hud(i);
 }
 
+async function tour(T,t){
+  const pts=T.path; setV(T.v); vehicle.setLngLat(pts[0]); setTour(null);
+  $('hudLeg').textContent=T.label;
+  const ahead=k=>pts[Math.min(k+8,pts.length-1)];
+  let hb=heading(pts[0],ahead(0));
+  await camTo({center:pts[0],zoom:T.zoom,pitch:TERRAIN.has(stops[cur].k)?62:55,bearing:hb,duration:2600,curve:1.3});
+  if(t!==token) return;
+  const cl=Math.cos(rad(pts[0][1])), cum=[0];
+  for(let k=1;k<pts.length;k++) cum.push(cum[k-1]+Math.hypot((pts[k][0]-pts[k-1][0])*cl,pts[k][1]-pts[k-1][1]));
+  const total=cum[cum.length-1], start=performance.now(); let k=0;
+  await new Promise(res=>{
+    const step=now=>{
+      if(t!==token) return res();
+      const u=Math.max(0,Math.min(1,(now-start)/T.dur)), e=u<.5?2*u*u:1-Math.pow(-2*u+2,2)/2, d=e*total;
+      while(k<pts.length-2&&cum[k+1]<d) k++;
+      const r=(d-cum[k])/((cum[k+1]-cum[k])||1), p=[pts[k][0]+(pts[k+1][0]-pts[k][0])*r, pts[k][1]+(pts[k+1][1]-pts[k][1])*r];
+      vehicle.setLngLat(p); aim(p,ahead(k)); setTour([...pts.slice(0,k+1),p]);
+      hb+=((((heading(p,ahead(k))-hb)%360)+540)%360-180)*.03;
+      map.jumpTo({center:p,bearing:hb});
+      if(u<1) raf=requestAnimationFrame(step); else res();
+    };
+    raf=requestAnimationFrame(step);
+  });
+  if(t!==token) return;
+  burstAt(pts[pts.length-1],T.burst);
+}
 async function arrive(i,t){
-  const s=stops[i]; setV(i===0?stops[1].mode:stops[i].mode); burstAt(ll(s.k),s.burst);
-  terrain(s.k==='DOL');
-  await camTo({center:ll(s.k),zoom:ZOOM[s.k],pitch:s.k==='DOL'?72:58,bearing:map.getBearing()+(i%2?35:-35),duration:2600,curve:1.2});
+  const s=stops[i]; terrain(TERRAIN.has(s.k)); burstAt(ll(s.k),s.burst);
+  const T=i>0&&i<stops.length-1?TOURS[s.k]:null;
+  if(T){ await sleep(600); if(t!==token) return; await tour(T,t); if(t===token) orbit(); return; }
+  setV(i===0?stops[1].mode:stops[i].mode);
+  await camTo({center:ll(s.k),zoom:ZOOM[s.k],pitch:TERRAIN.has(s.k)?64:55,bearing:map.getBearing()+(i%2?35:-35),duration:2600,curve:1.2});
   if(t===token) orbit();
 }
 async function leg(i,t,back=false,final=true){
   const n=back?i:i-1, seg=segs[n], pts=back?[...seg.pts].reverse():seg.pts;
-  orbitSeq++; terrain(false); setTrail(n,back?pts:null);
+  orbitSeq++; terrain(false); setTour(null); setTrail(n,back?pts:null);
   vehicle.setLngLat(pts[0]); setV(seg.mode);
   const last=pts[pts.length-1], span=Math.hypot(last[0]-pts[0][0],last[1]-pts[0][1]), fly=seg.mode==='✈️';
   const zBase=fly?(span>25?4:span>6?5.6:6.8):seg.mode==='🚄'?8.6:10.2, lift=fly?(span>25?1.3:.9):.6;
@@ -523,7 +598,7 @@ async function leg(i,t,back=false,final=true){
       const u=Math.max(0,Math.min(1,(now-start)/Math.max(dur,1))), e=u<.5?4*u*u*u:1-Math.pow(-2*u+2,3)/2;
       const f=e*(pts.length-1), k=Math.min(pts.length-2,Math.floor(f)), r=f-k;
       const p=[pts[k][0]+(pts[k+1][0]-pts[k][0])*r, pts[k][1]+(pts[k+1][1]-pts[k][1])*r];
-      vehicle.setLngLat(p); aim(pts[k],pts[k+1]);
+      vehicle.setLngLat(p); aim(p,ahead(k));
       setTrail(n,back?[p,...pts.slice(k+1)]:[...pts.slice(0,k+1),p]);
       hb+=((((heading(p,ahead(k))-hb)%360)+540)%360-180)*.06;
       map.jumpTo({center:p,zoom:zBase-lift*Math.sin(Math.PI*e),bearing:hb,pitch:55});
@@ -568,6 +643,7 @@ $('play').onclick=()=>{ if(playing){ clearAll(); stopPlay(); return; } play(); }
 $('next').onclick=()=>{ if(cur<stops.length-1) goTo(cur+1); };
 $('prev').onclick=()=>{ if(cur>0) goTo(cur-1); };
 document.querySelector('.cta').addEventListener('click',()=>setTimeout(()=>{ if(!playing) play(); },700));
+$('layerBtn').onclick=()=>setSat(!sat);
 const chips=$('chips');
 stops.forEach((s,i)=>{ const b=document.createElement('button'); b.className='chip'; b.role='listitem'; b.textContent=`${s.emoji} ${s.name}`; b.onclick=()=>goTo(i); chips.appendChild(b); });
 showPanel(0);
